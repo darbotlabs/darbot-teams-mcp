@@ -303,7 +303,7 @@ public class EnhancedAuthService : ITeamsAuthProvider
             var result = new Models.AuthenticationResult
             {
                 AccessToken = deviceCodeResult.AccessToken,
-                RefreshToken = deviceCodeResult.AccessToken, // MSAL handles refresh automatically
+                // RefreshToken is omitted as MSAL handles refresh automatically
                 ExpiresOn = deviceCodeResult.ExpiresOn,
                 TenantId = deviceCodeResult.TenantId ?? _configuration.TenantId,
                 Scopes = deviceCodeResult.Scopes.ToList()
