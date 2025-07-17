@@ -42,7 +42,7 @@
 
 ```bash
 # Clone and build
-git clone https://github.com/yourusername/darbot-teams-mcp
+git clone https://github.com/darbotlabs/darbot-teams-mcp
 cd darbot-teams-mcp
 dotnet build
 
