@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "darbot-teams": {
+      "command": "dotnet",
+      "args": ["run", "--project", "src/DarbotTeamsMcp.Server"],
+      "env": {
+        "TEAMS_CLIENT_ID": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+        "TEAMS_TENANT_ID": "common",
+        "TEAMS_SERVER_PORT": "3001",
+        "TEAMS_LOG_LEVEL": "Information",
+        "TEAMS_SIMULATION_MODE": "false"
+      }
+    }
+  }
+}
