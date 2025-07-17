@@ -2,10 +2,20 @@
   "mcp.servers": {
     "darbot-teams": {
       "command": "dotnet",
-      "args": ["run", "--project", "src/DarbotTeamsMcp.Server"],
+      "args": [
+        "run",
+        "--project",
+        "src/DarbotTeamsMcp.Server"
+      ],
       "env": {
-        "TEAMS_CLIENT_ID": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
         "TEAMS_TENANT_ID": "common",
+        "TEAMS_CLIENT_ID": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+        "TEAMS_LOG_TO_FILE": "true",
+        "TEAMS_SERVER_HOST": "localhost",
+        "TEAMS_ENABLE_REQUEST_LOGGING": "false",
+        "TEAMS_SIMULATION_MODE": "false",
+        "TEAMS_LOG_LEVEL": "Information",
+        "TEAMS_REQUIRE_AUTHENTICATION": "true",
         "TEAMS_SERVER_PORT": "3001"
       }
     }
