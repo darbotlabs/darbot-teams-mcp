@@ -163,4 +163,38 @@ public class TeamsConfiguration
             RequireAuthentication = bool.TryParse(Environment.GetEnvironmentVariable("TEAMS_REQUIRE_AUTHENTICATION"), out var requireAuth) ? requireAuth : true
         };
     }
+
+    /// <summary>
+    /// Creates configuration with automatic credential detection and smart defaults.
+    /// This is the enhanced version that provides simplified onboarding.
+    /// </summary>
+    public static async Task<TeamsConfiguration> FromEnvironmentWithAutoDetectionAsync()
+    {
+        var config = FromEnvironment();
+        
+        // Try to auto-detect credentials and enhance configuration
+        try
+        {
+            var detectionService = new Services.CredentialDetectionService(
+                Microsoft.Extensions.Logging.Abstractions.NullLogger<Services.CredentialDetectionService>.Instance);
+            
+            var credentialSources = await detectionService.DetectCredentialSourcesAsync();
+            var preferredSource = credentialSources.GetPreferredSource();
+            
+            if (preferredSource != null)
+            {
+                // Override tenant ID if we detected it from Azure CLI
+                if (!string.IsNullOrEmpty(preferredSource.TenantId) && config.TenantId == "common")
+                {
+                    config.TenantId = preferredSource.TenantId;
+                }
+            }
+        }
+        catch
+        {
+            // Ignore detection errors and use defaults
+        }
+        
+        return config;
+    }
 }
