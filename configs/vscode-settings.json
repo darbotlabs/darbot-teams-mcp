@@ -5,7 +5,9 @@
       "args": [
         "run",
         "--project",
-        "src/DarbotTeamsMcp.Server"
+        "src/DarbotTeamsMcp.Server",
+        "--",
+        "--stdio"
       ],
       "env": {
         "TEAMS_TENANT_ID": "common",
@@ -14,9 +16,10 @@
         "TEAMS_SERVER_HOST": "localhost",
         "TEAMS_ENABLE_REQUEST_LOGGING": "false",
         "TEAMS_SIMULATION_MODE": "false",
-        "TEAMS_LOG_LEVEL": "Information",
+        "TEAMS_LOG_LEVEL": "Warning",
         "TEAMS_REQUIRE_AUTHENTICATION": "true",
-        "TEAMS_SERVER_PORT": "3001"
+        "TEAMS_SERVER_PORT": "3001",
+        "MCP_MODE": "stdio"
       }
     }
   }

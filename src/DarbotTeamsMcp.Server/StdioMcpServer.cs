@@ -1,6 +1,8 @@
-using Serilog;
-using DarbotTeamsMcp.Core.Configuration;
+using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using DarbotTeamsMcp.Core.Interfaces;
+using DarbotTeamsMcp.Core.Configuration;
 using DarbotTeamsMcp.Core.Services;
 using DarbotTeamsMcp.Commands.UserManagement;
 using DarbotTeamsMcp.Commands.ChannelManagement;
@@ -15,109 +17,81 @@ using DarbotTeamsMcp.Server.Services;
 namespace DarbotTeamsMcp.Server;
 
 /// <summary>
-/// Main entry point for the Darbot Teams MCP Server.
-/// Configures services, logging, and starts the web server.
+/// MCP Server implementation for stdio communication (used by VS Code and other MCP clients).
+/// This runs as a standalone console application that communicates via standard input/output.
 /// </summary>
-public class Program
+public class StdioMcpServer
 {
-    public static async Task<int> Main(string[] args)
-    {
-        // Check if we should run in stdio mode (for VS Code and other MCP clients)
-        if (args.Contains("--stdio") || args.Contains("--mode=stdio") || Environment.GetEnvironmentVariable("MCP_MODE") == "stdio")
-        {
-            return await StdioMcpServer.RunStdioServerAsync(args);
-        }
+    private readonly ILogger<StdioMcpServer> _logger;
+    private readonly IMcpServer _mcpServer;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly CancellationTokenSource _cancellationTokenSource = new();
 
-        // Configure Serilog early for startup logging
-        Log.Logger = new LoggerConfiguration()
-            .WriteTo.Console()
-            .WriteTo.File("logs/startup-.log", rollingInterval: RollingInterval.Day)
-            .CreateLogger();
+    public StdioMcpServer(ILogger<StdioMcpServer> logger, IMcpServer mcpServer, IServiceProvider serviceProvider)
+    {
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _mcpServer = mcpServer ?? throw new ArgumentNullException(nameof(mcpServer));
+        _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+    }
+
+    public static async Task<int> RunStdioServerAsync(string[] args)
+    {
+        // Configure logging for stdio mode
+        using var loggerFactory = LoggerFactory.Create(builder =>
+        {
+            builder.AddConsole();
+            builder.SetMinimumLevel(LogLevel.Warning); // Reduce noise in stdio mode
+        });
+
+        var logger = loggerFactory.CreateLogger<StdioMcpServer>();
 
         try
         {
-            Log.Information("Starting Darbot Teams MCP Server (HTTP mode)");
-
-            var builder = WebApplication.CreateBuilder(args);
-
-            // Load Teams configuration first
-            var teamsConfig = TeamsConfiguration.FromEnvironment();
+            // Configure services
+            var services = new ServiceCollection();
+            ConfigureServices(services);
             
-            // Configure the server URLs
-            builder.WebHost.UseUrls($"http://{teamsConfig.ServerHost}:{teamsConfig.ServerPort}");
-
-            // Configure Serilog from configuration
-            builder.Host.UseSerilog((context, configuration) =>
-                configuration.ReadFrom.Configuration(context.Configuration));
-
-            builder.Services.AddSingleton(teamsConfig);
-
-            // Add services to the container
-            ConfigureServices(builder.Services, teamsConfig);
-
-            var app = builder.Build();
-
-            // Configure the HTTP request pipeline
-            ConfigurePipeline(app, teamsConfig);
-
-            // Register all Teams tools
-            await RegisterTeamsTools(app.Services);
-
-            // Start the server
-            Log.Information("Darbot Teams MCP Server starting on {Host}:{Port}", 
-                teamsConfig.ServerHost, teamsConfig.ServerPort);
-
-            await app.RunAsync();
+            var serviceProvider = services.BuildServiceProvider();
+            var mcpServer = serviceProvider.GetRequiredService<IMcpServer>();
+            
+            // Register all tools
+            await RegisterAllToolsAsync(mcpServer, serviceProvider, logger);
+            
+            // Start the MCP server
+            await mcpServer.StartAsync();
+            
+            // Create and run stdio server
+            var stdioServer = new StdioMcpServer(logger, mcpServer, serviceProvider);
+            await stdioServer.RunAsync();
             
             return 0;
         }
         catch (Exception ex)
         {
-            Log.Fatal(ex, "Darbot Teams MCP Server terminated unexpectedly");
+            logger.LogError(ex, "Fatal error in stdio MCP server");
             return 1;
-        }
-        finally
-        {
-            Log.CloseAndFlush();
         }
     }
 
-    private static void ConfigureServices(IServiceCollection services, TeamsConfiguration configuration)
+    private static void ConfigureServices(IServiceCollection services)
     {
-        // Add basic services
-        services.AddControllers();
-        services.AddMemoryCache();
-        services.AddHealthChecks();
+        // Load configuration
+        var teamsConfig = TeamsConfiguration.FromEnvironment();
+        services.AddSingleton(teamsConfig);
 
-        // Add Swagger/OpenAPI
-        services.AddEndpointsApiExplorer();
-        services.AddSwaggerGen(c =>
+        // Add basic services
+        services.AddMemoryCache();
+        services.AddLogging(builder =>
         {
-            c.SwaggerDoc("v1", new() 
-            { 
-                Title = "Darbot Teams MCP Server", 
-                Version = "v1",
-                Description = "Microsoft Teams MCP Server with 47+ Commands for Teams Management"
-            });
+            builder.AddConsole();
+            builder.SetMinimumLevel(LogLevel.Warning); // Reduce noise for stdio
         });
 
-        // Configure CORS
-        if (configuration.EnableCors)
-        {
-            services.AddCors(options =>
-            {
-                options.AddDefaultPolicy(policy =>
-                {
-                    policy.WithOrigins(configuration.CorsOrigins.ToArray())
-                          .AllowAnyMethod()
-                          .AllowAnyHeader()
-                          .AllowCredentials();
-                });
-            });
-        }        // Register MCP services
+        // Register MCP services
         services.AddSingleton<ITeamsAuthProvider, SimpleAuthService>();
         services.AddSingleton<IMcpServer, McpServer>();
-          // Register Teams Graph Client - placeholder implementation for testing
+        
+        // Register Teams Graph Client - placeholder implementation for testing
         services.AddSingleton<ITeamsGraphClient>(provider =>
         {
             var logger = provider.GetRequiredService<ILogger<MockTeamsGraphClient>>();
@@ -126,59 +100,15 @@ public class Program
 
         // Register HTTP client for Graph API
         services.AddHttpClient();
-
-        // Add logging
-        services.AddLogging();
     }
 
-    private static void ConfigurePipeline(WebApplication app, TeamsConfiguration configuration)
+    private static async Task RegisterAllToolsAsync(IMcpServer mcpServer, IServiceProvider serviceProvider, ILogger logger)
     {
-        // Configure the HTTP request pipeline
-        if (app.Environment.IsDevelopment())
-        {
-            app.UseSwagger();
-            app.UseSwaggerUI(c =>
-            {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Darbot Teams MCP Server v1");
-                c.RoutePrefix = string.Empty; // Serve Swagger UI at root
-            });
-        }
-
-        app.UseSerilogRequestLogging();
-
-        if (configuration.EnableCors)
-        {
-            app.UseCors();
-        }
-
-        app.UseRouting();
-        app.UseAuthorization();
-        app.MapControllers();
-        app.MapHealthChecks("/health");
-
-        // Add a simple root endpoint
-        app.MapGet("/", () => Results.Ok(new 
-        { 
-            message = "Darbot Teams MCP Server",
-            version = "1.0.0",
-            endpoints = new
-            {
-                mcp = "/mcp",
-                health = "/health",
-                info = "/mcp/info",
-                swagger = "/swagger"
-            }
-        }));
-    }    private static async Task RegisterTeamsTools(IServiceProvider services)
-    {
-        var mcpServer = services.GetRequiredService<IMcpServer>();
-        var logger = services.GetRequiredService<ILogger<Program>>();
-
         try
         {
-            var serviceScope = services.CreateScope();
-            var graphClient = serviceScope.ServiceProvider.GetService<ITeamsGraphClient>();
-            var toolLogger = serviceScope.ServiceProvider.GetRequiredService<ILogger<TeamsToolBase>>();
+            using var scope = serviceProvider.CreateScope();
+            var graphClient = scope.ServiceProvider.GetService<ITeamsGraphClient>();
+            var toolLogger = scope.ServiceProvider.GetRequiredService<ILogger<TeamsToolBase>>();
 
             if (graphClient != null)
             {
@@ -243,29 +173,88 @@ public class Program
                 // Presence & Notification Commands (3 tools)
                 mcpServer.RegisterTool(new GetStatusCommand(toolLogger, graphClient));
                 mcpServer.RegisterTool(new SetStatusCommand(toolLogger, graphClient));
-                mcpServer.RegisterTool(new SetNotificationCommand(toolLogger, graphClient));                // Basic/Support Commands (3 tools)
+                mcpServer.RegisterTool(new SetNotificationCommand(toolLogger, graphClient));
+
+                // Basic/Support Commands (3 tools)
                 mcpServer.RegisterTool(new GetTeamInfoCommand(toolLogger, graphClient));
                 mcpServer.RegisterTool(new HelpCommand(toolLogger, graphClient));
                 mcpServer.RegisterTool(new ReportIssueCommand(toolLogger, graphClient));
 
                 var toolCount = mcpServer.GetRegisteredTools().Count;
-                logger.LogInformation("Successfully registered {ToolCount} Teams tools across 9 categories", toolCount);
-                
-                // Log the achievement
-                logger.LogInformation("🎯 Teams MCP Quest Progress: {ToolCount}/47+ tools implemented - Quest COMPLETE! 🏆", toolCount);
+                logger.LogInformation("Successfully registered {ToolCount} Teams tools for stdio mode", toolCount);
             }
             else
             {
                 logger.LogWarning("GraphClient not available, running in simulation mode");
             }
-
-            // Start the MCP server
-            await mcpServer.StartAsync();
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to register Teams tools");
+            logger.LogError(ex, "Failed to register Teams tools for stdio mode");
             throw;
         }
+    }
+
+    public async Task RunAsync()
+    {
+        _logger.LogInformation("Starting MCP stdio server for VS Code integration");
+
+        try
+        {
+            // Process stdin line by line
+            string? line;
+            while ((line = await Console.In.ReadLineAsync()) != null && !_cancellationTokenSource.Token.IsCancellationRequested)
+            {
+                if (string.IsNullOrWhiteSpace(line))
+                    continue;
+
+                try
+                {
+                    var request = JsonSerializer.Deserialize<JsonElement>(line);
+                    var response = await _mcpServer.HandleRequestAsync(request, _cancellationTokenSource.Token);
+                    
+                    var responseJson = JsonSerializer.Serialize(response, new JsonSerializerOptions
+                    {
+                        WriteIndented = false
+                    });
+                    
+                    await Console.Out.WriteLineAsync(responseJson);
+                    await Console.Out.FlushAsync();
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogError(ex, "Invalid JSON received: {Line}", line);
+                    // Send JSON-RPC error response
+                    var errorResponse = new
+                    {
+                        jsonrpc = "2.0",
+                        error = new
+                        {
+                            code = -32700,
+                            message = "Parse error: Invalid JSON"
+                        },
+                        id = (object?)null
+                    };
+                    
+                    var errorJson = JsonSerializer.Serialize(errorResponse);
+                    await Console.Out.WriteLineAsync(errorJson);
+                    await Console.Out.FlushAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error processing request: {Line}", line);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Fatal error in stdio loop");
+            throw;
+        }
+    }
+
+    public void Stop()
+    {
+        _cancellationTokenSource.Cancel();
     }
 }

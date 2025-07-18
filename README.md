@@ -67,6 +67,68 @@ cd darbot-teams-mcp
 - ✅ Updates MCP client configurations
 - ✅ Provides guided next steps
 
+### **🔄 MCP Protocol Support**
+
+The server now supports **both HTTP and stdio modes** for maximum compatibility:
+
+- **HTTP Mode**: Perfect for web-based clients and testing (default on port 3001)
+- **Stdio Mode**: Required for VS Code and Claude Desktop integration
+
+### **🎮 VS Code Agent Mode Integration**
+
+**For VS Code with MCP support:**
+
+1. **Install the server**:
+   ```bash
+   git clone https://github.com/darbotlabs/darbot-teams-mcp
+   cd darbot-teams-mcp
+   dotnet build
+   ```
+
+2. **Add to your VS Code settings.json**:
+   ```json
+   {
+     "mcp.servers": {
+       "darbot-teams": {
+         "command": "dotnet",
+         "args": [
+           "run",
+           "--project",
+           "src/DarbotTeamsMcp.Server",
+           "--",
+           "--stdio"
+         ],
+         "env": {
+           "TEAMS_TENANT_ID": "common",
+           "TEAMS_CLIENT_ID": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+           "TEAMS_LOG_LEVEL": "Warning",
+           "MCP_MODE": "stdio"
+         }
+       }
+     }
+   }
+   ```
+
+3. **Test the integration**:
+   ```bash
+   ./test-mcp-server.sh
+   ```
+
+### **🧪 Testing MCP Integration**
+
+Run our comprehensive test suite:
+
+```bash
+# Test both HTTP and stdio modes
+./test-mcp-server.sh
+```
+
+This validates:
+- ✅ HTTP mode functionality (localhost:3001)
+- ✅ Stdio mode for VS Code integration
+- ✅ All 50+ tools are properly exposed
+- ✅ JSON-RPC 2.0 protocol compliance
+
 ### **🔍 Enhanced Credential Detection**
 
 The system now automatically discovers and uses existing Microsoft credentials from:
@@ -125,18 +187,27 @@ Using existing Azure CLI credentials...
 
 ## 🔧 MCP Integration
 
-### **VS Code Configuration**
+### **VS Code Configuration (Recommended for Agent Mode)**
 
-Add to your VS Code `settings.json`:
+Add to your VS Code `settings.json` for direct MCP integration:
 
 ```json
 {
   "mcp.servers": {
     "darbot-teams": {
-      "command": "node",
-      "args": ["path/to/server.js"],
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "path/to/darbot-teams-mcp/src/DarbotTeamsMcp.Server",
+        "--",
+        "--stdio"
+      ],
       "env": {
-        "TEAMS_CLIENT_ID": "your-client-id"
+        "TEAMS_CLIENT_ID": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+        "TEAMS_TENANT_ID": "common",
+        "TEAMS_LOG_LEVEL": "Warning",
+        "MCP_MODE": "stdio"
       }
     }
   }
@@ -152,14 +223,34 @@ Add to `claude_desktop_config.json`:
   "mcpServers": {
     "darbot-teams": {
       "command": "dotnet",
-      "args": ["run", "--project", "src/DarbotTeamsMcp.Server"],
+      "args": [
+        "run", 
+        "--project", 
+        "src/DarbotTeamsMcp.Server",
+        "--",
+        "--stdio"
+      ],
       "env": {
-        "TEAMS_CLIENT_ID": "your-client-id",
-        "TEAMS_TENANT_ID": "your-tenant-id"
+        "TEAMS_CLIENT_ID": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+        "TEAMS_TENANT_ID": "common",
+        "TEAMS_LOG_LEVEL": "Warning",
+        "MCP_MODE": "stdio"
       }
     }
   }
 }
+```
+
+### **HTTP Mode (Alternative)**
+
+For HTTP-based clients or testing:
+
+```bash
+# Start HTTP server
+dotnet run --project src/DarbotTeamsMcp.Server
+
+# Server runs on http://localhost:3001
+# Endpoints: /mcp, /mcp/health, /mcp/info
 ```
 
 ## 🎮 Example Commands
