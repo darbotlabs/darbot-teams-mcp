@@ -1,9 +1,9 @@
 {
   "mcp.servers": {
     "darbot-teams": {
-      "command": "node",
+      "command": "npx",
       "args": [
-        "/home/runner/work/darbot-teams-mcp/darbot-teams-mcp/bin/darbot-teams-mcp.js",
+        "darbot-teams-mcp",
         "--stdio"
       ],
       "env": {

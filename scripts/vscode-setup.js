@@ -39,9 +39,9 @@ function createMCPServerConfig(packagePath) {
   return {
     "mcp.servers": {
       "darbot-teams": {
-        "command": "node",
+        "command": "npx",
         "args": [
-          path.join(packagePath, "bin", "darbot-teams-mcp.js"),
+          "darbot-teams-mcp",
           "--stdio"
         ],
         "env": {
