@@ -5,21 +5,95 @@ This example demonstrates how to integrate the Darbot Teams MCP server with VS C
 ## Prerequisites
 
 1. VS Code with MCP extension installed
-2. .NET 8.0+ SDK
-3. The darbot-teams-mcp repository cloned locally
+2. Node.js 16.0+ (for npm installation)
+3. .NET 8.0+ SDK (automatically checked during installation)
 
-## Setup Instructions
+## Setup Instructions (NPM - Recommended)
 
-### 1. Build the Project
+### 1. Install the Package
 
 ```bash
+npm install -g darbot-teams-mcp
+```
+
+### 2. Auto-Configure VS Code
+
+```bash
+npx darbot-teams-mcp --vscode-setup
+```
+
+This command automatically:
+- ✅ Finds your VS Code settings.json location
+- ✅ Adds the MCP server configuration
+- ✅ Sets secure default values for testing
+- ✅ Creates a backup of your existing settings
+- ✅ Validates the installation
+
+### 3. Test the Integration
+
+```bash
+npx darbot-teams-mcp --test
+```
+
+Expected output:
+```
+🎉 All tests passed!
+
+📋 Summary:
+  - HTTP mode: ✅ Working (localhost:3001)
+  - Stdio mode: ✅ Working (for VS Code integration)
+  - Tools registered: 50
+  - MCP protocol: ✅ JSON-RPC 2.0 compliant
+
+🚀 Ready for VS Code integration!
+```
+
+## Manual Setup (Alternative)
+
+If the auto-setup doesn't work for your system:
+
+### 1. Install the Package
+
+```bash
+npm install -g darbot-teams-mcp
+```
+
+### 2. Manually Configure VS Code
+
+Add the following to your VS Code `settings.json`:
+
+```json
+{
+  "mcp.servers": {
+    "darbot-teams": {
+      "command": "npx",
+      "args": ["darbot-teams-mcp", "--stdio"],
+      "env": {
+        "TEAMS_CLIENT_ID": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+        "TEAMS_TENANT_ID": "common",
+        "TEAMS_LOG_LEVEL": "Warning",
+        "MCP_MODE": "stdio",
+        "TEAMS_SIMULATION_MODE": "true",
+        "TEAMS_REQUIRE_AUTHENTICATION": "false"
+      }
+    }
+  }
+}
+```
+
+## Git Installation (For Development)
+
+### 1. Clone and Build
+
+```bash
+git clone https://github.com/darbotlabs/darbot-teams-mcp
 cd darbot-teams-mcp
 dotnet build
 ```
 
 ### 2. Configure VS Code
 
-Add the following to your VS Code `settings.json`:
+Add this to your VS Code `settings.json` (replace `/path/to/darbot-teams-mcp` with actual path):
 
 ```json
 {
@@ -37,34 +111,13 @@ Add the following to your VS Code `settings.json`:
         "TEAMS_TENANT_ID": "common",
         "TEAMS_CLIENT_ID": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
         "TEAMS_LOG_LEVEL": "Warning",
-        "MCP_MODE": "stdio"
+        "MCP_MODE": "stdio",
+        "TEAMS_SIMULATION_MODE": "true",
+        "TEAMS_REQUIRE_AUTHENTICATION": "false"
       }
     }
   }
 }
-```
-
-**Note**: Replace `/path/to/darbot-teams-mcp` with the actual path to your repository.
-
-### 3. Test the Integration
-
-Use the provided test script:
-
-```bash
-./test-mcp-server.sh
-```
-
-Expected output:
-```
-🎉 All tests passed!
-
-📋 Summary:
-  - HTTP mode: ✅ Working (localhost:3001)
-  - Stdio mode: ✅ Working (for VS Code integration)
-  - Tools registered: 50
-  - MCP protocol: ✅ JSON-RPC 2.0 compliant
-
-🚀 Ready for VS Code integration!
 ```
 
 ## Available Teams Tools

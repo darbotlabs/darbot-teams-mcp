@@ -1,8 +1,11 @@
 {
   "mcp.servers": {
     "darbot-teams": {
-      "command": "npx",
-      "args": ["darbot-teams-mcp", "--stdio"],
+      "command": "node",
+      "args": [
+        "/home/runner/work/darbot-teams-mcp/darbot-teams-mcp/bin/darbot-teams-mcp.js",
+        "--stdio"
+      ],
       "env": {
         "TEAMS_CLIENT_ID": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
         "TEAMS_TENANT_ID": "common",
