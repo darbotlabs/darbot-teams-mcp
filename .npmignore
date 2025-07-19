@@ -1,0 +1,44 @@
+# Development files
+.git/
+.env
+*.log
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vs/
+.vscode/
+*.swp
+*.swo
+
+# Build artifacts
+bin/
+obj/
+*.user
+*.suo
+
+# Test output
+TestResults/
+coverage/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Documentation that's not needed in npm package
+Game1.md
+Enhanced-Plan.md
+Plan.md
+darbot-teams-mcp.md
+
+# Keep these important files
+!bin/darbot-teams-mcp.js
+!scripts/
+!src/
+!configs/
+!docs/
+!README.md
+!LICENSE
+!package.json
+!*.sln

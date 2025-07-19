@@ -49,9 +49,31 @@
 
 ## 🚀 Quick Start
 
-### **🎯 One-Click Installation (NEW!)**
+### **🎯 NPM Installation (NEW! - Recommended)**
 
-Experience our **enhanced installation process** - reduced from 15+ minutes to under 3 minutes:
+Install directly from npm with automatic VS Code configuration:
+
+```bash
+# Install the MCP server
+npm install -g darbot-teams-mcp
+
+# Auto-configure VS Code (one command setup!)
+npx darbot-teams-mcp --vscode-setup
+
+# Test the installation
+npx darbot-teams-mcp --test
+```
+
+**What this does automatically:**
+- ✅ Installs and builds the .NET MCP server
+- ✅ Auto-configures VS Code settings.json
+- ✅ Sets secure default values for testing
+- ✅ No manual configuration required
+- ✅ Ready to use in under 2 minutes
+
+### **🔄 Alternative: Git Installation**
+
+For development or advanced use:
 
 ```bash
 # Clone and setup with automatic credential detection
@@ -60,12 +82,69 @@ cd darbot-teams-mcp
 ./setup.ps1
 ```
 
-**What this does automatically:**
-- ✅ Detects existing Azure CLI credentials
-- ✅ Validates prerequisites and project structure  
-- ✅ Generates optimized environment configuration
-- ✅ Updates MCP client configurations
-- ✅ Provides guided next steps
+### **🔄 MCP Protocol Support**
+
+The server now supports **both HTTP and stdio modes** for maximum compatibility:
+
+- **HTTP Mode**: Perfect for web-based clients and testing (default on port 3001)
+- **Stdio Mode**: Required for VS Code and Claude Desktop integration
+
+### **🎮 VS Code Agent Mode Integration**
+
+**Option 1: Automatic Setup (Recommended)**
+```bash
+# Install and auto-configure in one step
+npm install -g darbot-teams-mcp
+npx darbot-teams-mcp --vscode-setup
+```
+
+**Option 2: Manual Setup**
+If you prefer manual configuration or the auto-setup doesn't work:
+
+1. **Install the server**:
+   ```bash
+   npm install -g darbot-teams-mcp
+   ```
+
+2. **Add to your VS Code settings.json**:
+   ```json
+   {
+     "mcp.servers": {
+       "darbot-teams": {
+         "command": "npx",
+         "args": ["darbot-teams-mcp", "--stdio"],
+         "env": {
+           "TEAMS_TENANT_ID": "common",
+           "TEAMS_CLIENT_ID": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+           "TEAMS_LOG_LEVEL": "Warning",
+           "MCP_MODE": "stdio",
+           "TEAMS_SIMULATION_MODE": "true",
+           "TEAMS_REQUIRE_AUTHENTICATION": "false"
+         }
+       }
+     }
+   }
+   ```
+
+3. **Test the integration**:
+   ```bash
+   npx darbot-teams-mcp --test
+   ```
+
+### **🧪 Testing MCP Integration**
+
+Run our comprehensive test suite:
+
+```bash
+# Test both HTTP and stdio modes
+./test-mcp-server.sh
+```
+
+This validates:
+- ✅ HTTP mode functionality (localhost:3001)
+- ✅ Stdio mode for VS Code integration
+- ✅ All 50+ tools are properly exposed
+- ✅ JSON-RPC 2.0 protocol compliance
 
 ### **🔍 Enhanced Credential Detection**
 
@@ -125,18 +204,74 @@ Using existing Azure CLI credentials...
 
 ## 🔧 MCP Integration
 
-### **VS Code Configuration**
+### **NPM Package Usage (Recommended)**
 
-Add to your VS Code `settings.json`:
+The easiest way to use the MCP server:
+
+```bash
+# Install globally
+npm install -g darbot-teams-mcp
+
+# Run in stdio mode (for VS Code)
+npx darbot-teams-mcp --stdio
+
+# Run in HTTP mode
+npx darbot-teams-mcp --http
+
+# Auto-configure VS Code
+npx darbot-teams-mcp --vscode-setup
+
+# Test the server
+npx darbot-teams-mcp --test
+
+# Show help
+npx darbot-teams-mcp --help
+```
+
+### **VS Code Configuration (Auto-Generated)**
+
+When you run `npx darbot-teams-mcp --vscode-setup`, it automatically adds this to your VS Code `settings.json`:
 
 ```json
 {
   "mcp.servers": {
     "darbot-teams": {
-      "command": "node",
-      "args": ["path/to/server.js"],
+      "command": "npx",
+      "args": ["darbot-teams-mcp", "--stdio"],
       "env": {
-        "TEAMS_CLIENT_ID": "your-client-id"
+        "TEAMS_CLIENT_ID": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+        "TEAMS_TENANT_ID": "common",
+        "TEAMS_LOG_LEVEL": "Warning",
+        "MCP_MODE": "stdio",
+        "TEAMS_SIMULATION_MODE": "true",
+        "TEAMS_REQUIRE_AUTHENTICATION": "false"
+      }
+    }
+  }
+}
+```
+
+### **Manual Configuration (Alternative)**
+
+For manual setup or git installation, add to your VS Code `settings.json`:
+
+```json
+{
+  "mcp.servers": {
+    "darbot-teams": {
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "path/to/darbot-teams-mcp/src/DarbotTeamsMcp.Server",
+        "--",
+        "--stdio"
+      ],
+      "env": {
+        "TEAMS_CLIENT_ID": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+        "TEAMS_TENANT_ID": "common",
+        "TEAMS_LOG_LEVEL": "Warning",
+        "MCP_MODE": "stdio"
       }
     }
   }
@@ -152,14 +287,34 @@ Add to `claude_desktop_config.json`:
   "mcpServers": {
     "darbot-teams": {
       "command": "dotnet",
-      "args": ["run", "--project", "src/DarbotTeamsMcp.Server"],
+      "args": [
+        "run", 
+        "--project", 
+        "src/DarbotTeamsMcp.Server",
+        "--",
+        "--stdio"
+      ],
       "env": {
-        "TEAMS_CLIENT_ID": "your-client-id",
-        "TEAMS_TENANT_ID": "your-tenant-id"
+        "TEAMS_CLIENT_ID": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+        "TEAMS_TENANT_ID": "common",
+        "TEAMS_LOG_LEVEL": "Warning",
+        "MCP_MODE": "stdio"
       }
     }
   }
 }
+```
+
+### **HTTP Mode (Alternative)**
+
+For HTTP-based clients or testing:
+
+```bash
+# Start HTTP server
+dotnet run --project src/DarbotTeamsMcp.Server
+
+# Server runs on http://localhost:3001
+# Endpoints: /mcp, /mcp/health, /mcp/info
 ```
 
 ## 🎮 Example Commands

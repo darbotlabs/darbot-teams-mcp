@@ -9,7 +9,11 @@ x86/
 [Aa][Rr][Mm]/
 [Aa][Rr][Mm]64/
 bld/
-[Bb]in/
+# .NET build directories
+src/**/[Bb]in/
+tests/**/[Bb]in/
+# But allow NPM bin directory
+!bin/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/

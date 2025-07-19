@@ -1,0 +1,53 @@
+{
+  "name": "darbot-teams-mcp",
+  "version": "1.0.0",
+  "description": "Microsoft Teams Management via Model Context Protocol - VS Code Integration",
+  "main": "bin/darbot-teams-mcp.js",
+  "bin": {
+    "darbot-teams-mcp": "./bin/darbot-teams-mcp.js"
+  },
+  "scripts": {
+    "postinstall": "node scripts/postinstall.js",
+    "vscode-setup": "node scripts/vscode-setup.js",
+    "build": "dotnet build",
+    "test": "./test-mcp-server.sh"
+  },
+  "keywords": [
+    "microsoft-teams",
+    "mcp",
+    "model-context-protocol",
+    "vscode",
+    "teams-management",
+    "ai-agent"
+  ],
+  "author": "darbotlabs",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/darbotlabs/darbot-teams-mcp"
+  },
+  "homepage": "https://github.com/darbotlabs/darbot-teams-mcp",
+  "bugs": {
+    "url": "https://github.com/darbotlabs/darbot-teams-mcp/issues"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "os": [
+    "win32",
+    "darwin",
+    "linux"
+  ],
+  "files": [
+    "bin/",
+    "scripts/",
+    "src/",
+    "configs/",
+    "*.sln",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
