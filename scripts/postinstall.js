@@ -62,17 +62,26 @@ async function setup() {
     console.log(`
 🎉 Darbot Teams MCP Server installed successfully!
 
-QUICK START:
-  # Auto-configure VS Code
-  npx darbot-teams-mcp --vscode-setup
-  
-  # Or run manually in stdio mode
-  npx darbot-teams-mcp --stdio
-  
-  # Test the installation
-  npx darbot-teams-mcp --test
+📋 WHAT'S NEXT:
 
-For more help: npx darbot-teams-mcp --help
+1️⃣  QUICK SETUP (Recommended):
+    npx darbot-teams-mcp --vscode-setup
+    
+2️⃣  MANUAL CONFIGURATION:
+    npx darbot-teams-mcp --stdio     # For VS Code
+    npx darbot-teams-mcp --http      # For web clients
+    
+3️⃣  TEST INSTALLATION:
+    npx darbot-teams-mcp --test
+    
+4️⃣  GET HELP:
+    npx darbot-teams-mcp --help
+
+🔗 More Information:
+  • Documentation: https://github.com/darbotlabs/darbot-teams-mcp
+  • Issues: https://github.com/darbotlabs/darbot-teams-mcp/issues
+
+✨ You now have 50+ Teams management commands available!
 `);
     
   } catch (error) {
@@ -80,10 +89,35 @@ For more help: npx darbot-teams-mcp --help
     
     if (error.message.includes('.NET SDK')) {
       console.log(`
-📥 Please install .NET SDK first:
-  - Download from: https://dotnet.microsoft.com/download
-  - Minimum version: .NET 8.0
-  - Then run: npm install darbot-teams-mcp
+📥 REQUIRED: Install .NET SDK first
+
+DOWNLOAD FROM: https://dotnet.microsoft.com/download
+MINIMUM VERSION: .NET 8.0
+
+AFTER INSTALLING:
+  • Verify: dotnet --version
+  • Retry: npm install darbot-teams-mcp
+  • Test: npx darbot-teams-mcp --test
+
+ALTERNATIVE APPROACH:
+  • Use git clone method instead of npm
+  • See: https://github.com/darbotlabs/darbot-teams-mcp#installation
+
+NEED HELP?
+  • Documentation: https://github.com/darbotlabs/darbot-teams-mcp
+  • Issues: https://github.com/darbotlabs/darbot-teams-mcp/issues
+`);
+    } else {
+      console.log(`
+🔧 TROUBLESHOOTING:
+  • Check .NET SDK: dotnet --version
+  • Try cleaning: dotnet clean && dotnet build
+  • Check logs for more details
+  • Check internet connection for package restore
+
+GET HELP:
+  • Documentation: https://github.com/darbotlabs/darbot-teams-mcp
+  • Issues: https://github.com/darbotlabs/darbot-teams-mcp/issues
 `);
     }
     

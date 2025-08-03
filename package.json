@@ -39,9 +39,12 @@
     "linux"
   ],
   "files": [
-    "bin/",
+    "bin/darbot-teams-mcp.js",
     "scripts/",
-    "src/",
+    "src/**/*.cs",
+    "src/**/*.fs", 
+    "src/**/*.csproj",
+    "src/**/*.fsproj",
     "configs/",
     "*.sln",
     "README.md",

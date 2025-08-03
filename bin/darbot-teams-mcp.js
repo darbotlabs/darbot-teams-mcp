@@ -93,8 +93,14 @@ function runMcpServer(mode) {
   const serverProject = path.join(packageRoot, 'src', 'DarbotTeamsMcp.Server');
   
   if (!fs.existsSync(serverProject)) {
-    console.error('❌ Server project not found:', serverProject);
-    console.error('💡 Make sure the package was installed correctly');
+    console.error(`❌ Server project not found: ${serverProject}`);
+    console.error(`
+🔧 TROUBLESHOOTING:
+  • Make sure the package was installed correctly
+  • Try reinstalling: npm uninstall -g darbot-teams-mcp && npm install -g darbot-teams-mcp
+  • Check .NET SDK is installed: dotnet --version
+  • For help: npx darbot-teams-mcp --help
+`);
     process.exit(1);
   }
 
@@ -118,18 +124,44 @@ function runMcpServer(mode) {
       console.error(`
 ❌ .NET SDK not found!
 
-📥 Please install .NET SDK:
-  - Download from: https://dotnet.microsoft.com/download
-  - Minimum version: .NET 8.0
-  - Then try again: npx darbot-teams-mcp ${process.argv.slice(2).join(' ')}
+📥 REQUIRED: Install .NET SDK first:
+  • Download from: https://dotnet.microsoft.com/download
+  • Minimum version: .NET 8.0
+  • Verify installation: dotnet --version
+
+✅ AFTER INSTALLING .NET:
+  • Try again: npx darbot-teams-mcp ${process.argv.slice(2).join(' ')}
+  • Or test: npx darbot-teams-mcp --test
+
+🆘 NEED HELP?
+  • Documentation: https://github.com/darbotlabs/darbot-teams-mcp
+  • Issues: https://github.com/darbotlabs/darbot-teams-mcp/issues
 `);
     } else {
-      console.error('❌ Failed to start MCP server:', error.message);
+      console.error(`❌ Failed to start MCP server: ${error.message}`);
+      console.error(`
+🔧 TROUBLESHOOTING:
+  • Check .NET SDK: dotnet --version
+  • Reinstall package: npm install -g darbot-teams-mcp
+  • Check logs in the 'logs/' directory
+  • Report issue: https://github.com/darbotlabs/darbot-teams-mcp/issues
+`);
     }
     process.exit(1);
   });
 
   child.on('close', (code) => {
+    if (code !== 0) {
+      console.error(`
+⚠️  MCP server exited with code ${code}
+
+🔧 TROUBLESHOOTING:
+  • Check logs in the 'logs/' directory
+  • Try: npx darbot-teams-mcp --test
+  • For help: npx darbot-teams-mcp --help
+  • Report issue: https://github.com/darbotlabs/darbot-teams-mcp/issues
+`);
+    }
     process.exit(code);
   });
 }

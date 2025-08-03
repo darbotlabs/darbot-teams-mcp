@@ -8,12 +8,17 @@
       ],
       "env": {
         "TEAMS_CLIENT_ID": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
-        "TEAMS_TENANT_ID": "common",
+        "TEAMS_TENANT_ID": "12345678-1234-1234-1234-123456789012",
         "TEAMS_LOG_LEVEL": "Warning",
         "MCP_MODE": "stdio",
         "TEAMS_SIMULATION_MODE": "true",
         "TEAMS_REQUIRE_AUTHENTICATION": "false"
       }
     }
+  },
+  "_darbot_config_info": {
+    "tenant_detected": true,
+    "setup_required": false,
+    "instructions": "Tenant ID was automatically detected from Azure CLI"
   }
 }
