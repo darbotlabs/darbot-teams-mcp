@@ -11,20 +11,27 @@ Thumbs.db
 *.swp
 *.swo
 
-# Build artifacts
-bin/
-obj/
+# Build artifacts - exclude ALL compiled binary files
+src/**/bin/**
+src/**/obj/**
 *.user
 *.suo
+*.pdb
+*.dll
+*.exe
+*.deps.json
+*.runtimeconfig.json
 
-# Test output
+# Test output and artifacts
 TestResults/
 coverage/
+tests/
 
 # Temporary files
 tmp/
 temp/
 *.tmp
+*.tgz
 
 # Documentation that's not needed in npm package
 Game1.md
@@ -32,13 +39,8 @@ Enhanced-Plan.md
 Plan.md
 darbot-teams-mcp.md
 
-# Keep these important files
-!bin/darbot-teams-mcp.js
-!scripts/
-!src/
-!configs/
-!docs/
-!README.md
-!LICENSE
-!package.json
-!*.sln
+# Keep only source files and essential configs
+!src/**/*.cs
+!src/**/*.fs
+!src/**/*.csproj
+!src/**/*.fsproj

@@ -141,11 +141,65 @@ For more help: npx darbot-teams-mcp --help
     
     if (error.message.includes('Unsupported platform')) {
       console.log(`
-🔧 Manual Setup Required:
+🔧 MANUAL SETUP REQUIRED:
 
-Add this to your VS Code settings.json:
+Your platform is not automatically supported, but you can set it up manually:
+
+1️⃣  FIND YOUR VS CODE SETTINGS:
+    • Windows: %APPDATA%/Code/User/settings.json
+    • macOS: ~/Library/Application Support/Code/User/settings.json  
+    • Linux: ~/.config/Code/User/settings.json
+
+2️⃣  ADD THIS CONFIGURATION:
 
 ${JSON.stringify(createMCPServerConfig(getPackageInstallPath()), null, 2)}
+
+3️⃣  RESTART VS CODE and you're ready!
+
+NEED HELP?
+  • Documentation: https://github.com/darbotlabs/darbot-teams-mcp
+  • Issues: https://github.com/darbotlabs/darbot-teams-mcp/issues
+`);
+    } else if (error.code === 'EACCES' || error.code === 'EPERM') {
+      console.log(`
+🔒 PERMISSION DENIED
+
+Try one of these solutions:
+
+OPTION 1 - Run with elevated permissions:
+  • Windows: Run as Administrator
+  • macOS/Linux: Use sudo (not recommended)
+
+OPTION 2 - Manual setup (recommended):
+  1. Open VS Code
+  2. Go to Settings (Ctrl/Cmd + ,)
+  3. Search for "mcp"
+  4. Add the configuration manually
+
+CONFIGURATION TO ADD:
+${JSON.stringify(createMCPServerConfig(getPackageInstallPath()), null, 2)}
+
+NEED HELP?
+  • Documentation: https://github.com/darbotlabs/darbot-teams-mcp
+`);
+    } else {
+      console.log(`
+🔧 SETUP FAILED - Manual configuration required
+
+MANUAL SETUP STEPS:
+1. Open VS Code Settings (Ctrl/Cmd + ,)
+2. Search for "mcp" 
+3. Add this configuration:
+
+${JSON.stringify(createMCPServerConfig(getPackageInstallPath()), null, 2)}
+
+ALTERNATIVE:
+  • Edit settings.json directly
+  • Location varies by OS (see documentation)
+
+GET HELP:
+  • Documentation: https://github.com/darbotlabs/darbot-teams-mcp
+  • Issues: https://github.com/darbotlabs/darbot-teams-mcp/issues
 `);
     }
     
