@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { spawn } = require('child_process');
 
 function findVSCodeSettingsPath() {
   const platform = os.platform();
@@ -35,7 +36,119 @@ function getPackageInstallPath() {
   return packagePath;
 }
 
-function createMCPServerConfig(packagePath) {
+/**
+ * Detects Azure CLI tenant ID if available
+ */
+async function detectTenantId() {
+  try {
+    console.log('🔍 Detecting tenant configuration from Azure CLI...');
+    
+    // Check if Azure CLI is available
+    const azPath = await findAzureCli();
+    if (!azPath) {
+      console.log('ℹ️  Azure CLI not found - will use manual configuration');
+      return null;
+    }
+
+    // Get current account info
+    const accountInfo = await getAzureAccount(azPath);
+    if (accountInfo && accountInfo.tenantId) {
+      console.log(`✅ Detected tenant ID: ${accountInfo.tenantId}`);
+      return accountInfo.tenantId;
+    }
+
+    console.log('ℹ️  No Azure CLI session found - will use manual configuration');
+    return null;
+  } catch (error) {
+    console.log(`ℹ️  Tenant detection failed: ${error.message} - will use manual configuration`);
+    return null;
+  }
+}
+
+/**
+ * Finds Azure CLI executable
+ */
+async function findAzureCli() {
+  const commands = process.platform === 'win32' ? ['az.cmd', 'az.exe'] : ['az'];
+  
+  for (const command of commands) {
+    try {
+      const which = process.platform === 'win32' ? 'where' : 'which';
+      const result = await runCommand(which, [command]);
+      if (result.success && result.stdout.trim()) {
+        return result.stdout.trim().split('\n')[0].trim();
+      }
+    } catch {
+      // Continue to next command
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Gets Azure CLI account information
+ */
+async function getAzureAccount(azPath) {
+  try {
+    const result = await runCommand(azPath, ['account', 'show', '--output', 'json']);
+    if (result.success && result.stdout) {
+      return JSON.parse(result.stdout);
+    }
+  } catch (error) {
+    // Azure CLI might not be logged in
+  }
+  
+  return null;
+}
+
+/**
+ * Runs a command and returns the result
+ */
+function runCommand(command, args, options = {}) {
+  return new Promise((resolve) => {
+    const child = spawn(command, args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      ...options
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout?.on('data', (data) => {
+      stdout += data.toString();
+    });
+
+    child.stderr?.on('data', (data) => {
+      stderr += data.toString();
+    });
+
+    child.on('close', (code) => {
+      resolve({
+        success: code === 0,
+        stdout,
+        stderr,
+        code
+      });
+    });
+
+    child.on('error', (error) => {
+      resolve({
+        success: false,
+        stdout,
+        stderr,
+        error: error.message,
+        code: -1
+      });
+    });
+  });
+}
+
+function createMCPServerConfig(packagePath, tenantId = null) {
+  // Use detected tenant ID, or provide guidance for manual configuration
+  const finalTenantId = tenantId || '${TEAMS_TENANT_ID}';
+  const isDetected = tenantId !== null;
+  
   return {
     "mcp.servers": {
       "darbot-teams": {
@@ -46,13 +159,21 @@ function createMCPServerConfig(packagePath) {
         ],
         "env": {
           "TEAMS_CLIENT_ID": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
-          "TEAMS_TENANT_ID": "common",
+          "TEAMS_TENANT_ID": finalTenantId,
           "TEAMS_LOG_LEVEL": "Warning",
           "MCP_MODE": "stdio",
           "TEAMS_SIMULATION_MODE": "true",
           "TEAMS_REQUIRE_AUTHENTICATION": "false"
         }
       }
+    },
+    // Add metadata for configuration guidance
+    "_darbot_config_info": {
+      "tenant_detected": isDetected,
+      "setup_required": !isDetected,
+      "instructions": isDetected ? 
+        "Tenant ID was automatically detected from Azure CLI" :
+        "Replace ${TEAMS_TENANT_ID} with your actual tenant ID or set TEAMS_TENANT_ID environment variable"
     }
   };
 }
@@ -65,6 +186,9 @@ async function setupVSCode() {
     console.log('🔧 Configuring VS Code for Darbot Teams MCP...');
     console.log(`📍 VS Code settings: ${settingsPath}`);
     console.log(`📦 Package location: ${packagePath}`);
+    
+    // Try to detect tenant ID from Azure CLI
+    const detectedTenantId = await detectTenantId();
     
     // Ensure settings directory exists
     const settingsDir = path.dirname(settingsPath);
@@ -90,7 +214,7 @@ async function setupVSCode() {
     }
 
     // Add or update MCP server configuration
-    const mcpConfig = createMCPServerConfig(packagePath);
+    const mcpConfig = createMCPServerConfig(packagePath, detectedTenantId);
     
     if (!settings["mcp.servers"]) {
       settings["mcp.servers"] = {};
@@ -102,8 +226,15 @@ async function setupVSCode() {
     fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
     
     console.log('✅ VS Code configuration updated successfully!');
-    console.log(`
+    
+    // Show appropriate next steps based on whether tenant was detected
+    if (detectedTenantId) {
+      console.log(`
 🎉 Setup Complete!
+
+✅ TENANT CONFIGURATION:
+  • Automatically detected tenant ID: ${detectedTenantId}
+  • Configuration is ready to use!
 
 NEXT STEPS:
 1. 📱 Restart VS Code to load the new MCP server
@@ -119,10 +250,49 @@ EXAMPLE COMMANDS TO TRY:
 CONFIGURATION DETAILS:
   • Server: darbot-teams
   • Mode: stdio (VS Code compatible)
+  • Tenant: ${detectedTenantId} (auto-detected)
   • Authentication: Disabled (for initial testing)
   • Simulation: Enabled (safe for experimentation)
   • Tools available: 50+ Teams management commands
+`);
+    } else {
+      console.log(`
+🎉 Setup Complete - Manual Configuration Required!
 
+⚠️  TENANT CONFIGURATION NEEDED:
+  • Could not auto-detect your Microsoft 365 tenant ID
+  • You need to configure your tenant ID manually
+
+🔧 SETUP YOUR TENANT ID:
+
+Option 1 - Use Azure CLI (Recommended):
+  1. Install Azure CLI: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli
+  2. Login: az login
+  3. Re-run setup: npx darbot-teams-mcp --vscode-setup
+
+Option 2 - Set Environment Variable:
+  1. Find your tenant ID: https://docs.microsoft.com/en-us/azure/active-directory/fundamentals/active-directory-how-to-find-tenant
+  2. Set environment variable: TEAMS_TENANT_ID=your-tenant-id-here
+  3. Restart VS Code
+
+Option 3 - Edit VS Code Settings:
+  1. Open VS Code Settings (Ctrl/Cmd + ,)
+  2. Search for "mcp"
+  3. Replace \${TEAMS_TENANT_ID} with your actual tenant ID
+
+📋 FINDING YOUR TENANT ID:
+  • Azure Portal: Go to Azure Active Directory → Properties → Tenant ID
+  • PowerShell: (Get-AzureADTenantDetail).ObjectId
+  • Office 365 Admin Center: Settings → Org settings → Organization profile
+
+NEXT STEPS AFTER CONFIGURATION:
+1. 📱 Restart VS Code to load the new MCP server
+2. 🔌 The darbot-teams MCP server should automatically connect
+3. 🎯 You can now use Teams commands in your AI conversations
+`);
+    }
+
+    console.log(`
 TROUBLESHOOTING:
   • If tools don't appear, check VS Code Developer Console
   • Ensure MCP extension is installed in VS Code
@@ -152,9 +322,14 @@ Your platform is not automatically supported, but you can set it up manually:
 
 2️⃣  ADD THIS CONFIGURATION:
 
-${JSON.stringify(createMCPServerConfig(getPackageInstallPath()), null, 2)}
+${JSON.stringify(createMCPServerConfig(getPackageInstallPath(), null), null, 2)}
 
-3️⃣  RESTART VS CODE and you're ready!
+3️⃣  CONFIGURE YOUR TENANT:
+    • Replace \${TEAMS_TENANT_ID} with your actual tenant ID
+    • Or set TEAMS_TENANT_ID environment variable
+    • Find tenant ID: https://docs.microsoft.com/en-us/azure/active-directory/fundamentals/active-directory-how-to-find-tenant
+
+4️⃣  RESTART VS CODE and you're ready!
 
 NEED HELP?
   • Documentation: https://github.com/darbotlabs/darbot-teams-mcp
@@ -177,7 +352,9 @@ OPTION 2 - Manual setup (recommended):
   4. Add the configuration manually
 
 CONFIGURATION TO ADD:
-${JSON.stringify(createMCPServerConfig(getPackageInstallPath()), null, 2)}
+${JSON.stringify(createMCPServerConfig(getPackageInstallPath(), null), null, 2)}
+
+⚠️  IMPORTANT: Replace \${TEAMS_TENANT_ID} with your actual tenant ID!
 
 NEED HELP?
   • Documentation: https://github.com/darbotlabs/darbot-teams-mcp
@@ -191,7 +368,9 @@ MANUAL SETUP STEPS:
 2. Search for "mcp" 
 3. Add this configuration:
 
-${JSON.stringify(createMCPServerConfig(getPackageInstallPath()), null, 2)}
+${JSON.stringify(createMCPServerConfig(getPackageInstallPath(), null), null, 2)}
+
+⚠️  IMPORTANT: Replace \${TEAMS_TENANT_ID} with your actual tenant ID!
 
 ALTERNATIVE:
   • Edit settings.json directly

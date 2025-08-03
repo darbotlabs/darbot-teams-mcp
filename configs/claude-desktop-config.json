@@ -10,7 +10,7 @@
         "--stdio"
       ],
       "env": {
-        "TEAMS_TENANT_ID": "common",
+        "TEAMS_TENANT_ID": "${TEAMS_TENANT_ID}",
         "TEAMS_CLIENT_ID": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
         "TEAMS_LOG_TO_FILE": "true",
         "TEAMS_SERVER_HOST": "localhost",
@@ -22,5 +22,24 @@
         "MCP_MODE": "stdio"
       }
     }
+  },
+  "_setup_instructions": {
+    "description": "This is a template configuration file for Claude Desktop",
+    "required_setup": [
+      "Replace ${TEAMS_TENANT_ID} with your actual Microsoft 365 tenant ID",
+      "Or set TEAMS_TENANT_ID environment variable before starting Claude Desktop",
+      "Use 'npx darbot-teams-mcp --vscode-setup' for automatic VS Code configuration"
+    ],
+    "find_tenant_id": [
+      "Azure Portal: Azure Active Directory → Properties → Tenant ID",
+      "PowerShell: (Get-AzureADTenantDetail).ObjectId",
+      "Azure CLI: az account show --query tenantId -o tsv",
+      "Office 365 Admin Center: Settings → Org settings → Organization profile"
+    ],
+    "alternative_setup": [
+      "For simplified testing, you can temporarily use 'common' as the tenant ID",
+      "This allows multi-tenant authentication but requires interactive login",
+      "For production use, always specify your actual tenant ID"
+    ]
   }
 }

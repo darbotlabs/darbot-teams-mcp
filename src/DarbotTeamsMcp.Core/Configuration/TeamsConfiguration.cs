@@ -9,10 +9,11 @@ namespace DarbotTeamsMcp.Core.Configuration;
 public class TeamsConfiguration
 {
     /// <summary>
-    /// Azure AD tenant ID. Use "common" for multi-tenant.
+    /// Azure AD tenant ID. Should be set to your organization's tenant ID.
+    /// Use environment variable TEAMS_TENANT_ID or Azure CLI auto-detection.
     /// </summary>
     [Required]
-    public string TenantId { get; set; } = "common";
+    public string TenantId { get; set; } = Environment.GetEnvironmentVariable("TEAMS_TENANT_ID") ?? "TENANT_ID_REQUIRED";
 
     /// <summary>
     /// Azure AD application client ID.
@@ -147,9 +148,17 @@ public class TeamsConfiguration
     /// </summary>
     public static TeamsConfiguration FromEnvironment()
     {
+        var tenantId = Environment.GetEnvironmentVariable("TEAMS_TENANT_ID");
+        
+        // If no tenant ID is configured, provide a clear indicator that configuration is needed
+        if (string.IsNullOrEmpty(tenantId))
+        {
+            tenantId = "TENANT_ID_REQUIRED";
+        }
+        
         return new TeamsConfiguration
         {
-            TenantId = Environment.GetEnvironmentVariable("TEAMS_TENANT_ID") ?? "common",
+            TenantId = tenantId,
             ClientId = Environment.GetEnvironmentVariable("TEAMS_CLIENT_ID") ?? "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
             RedirectUri = Environment.GetEnvironmentVariable("TEAMS_REDIRECT_URI") ?? "http://localhost:3000",
             CurrentTeamId = Environment.GetEnvironmentVariable("TEAMS_CURRENT_TEAM_ID"),
@@ -184,7 +193,7 @@ public class TeamsConfiguration
             if (preferredSource != null)
             {
                 // Override tenant ID if we detected it from Azure CLI
-                if (!string.IsNullOrEmpty(preferredSource.TenantId) && config.TenantId == "common")
+                if (!string.IsNullOrEmpty(preferredSource.TenantId) && (config.TenantId == "TENANT_ID_REQUIRED" || config.TenantId == "common"))
                 {
                     config.TenantId = preferredSource.TenantId;
                 }
